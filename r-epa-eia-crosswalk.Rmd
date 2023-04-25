@@ -73,7 +73,7 @@ library(tidyverse)
 
 library(lubridate) # Make working with dates easier
 
-library(httr) # Perform HTTP requests (in this case used to get data from FACT API)
+library(httr2) # Perform HTTP requests (in this case used to get data from FACT API)
 
 library(tidyjson) # Work with json objects in a tidy way. Useful for highly nested objects and "ragged" arrays and/or objects (varying lengths by document)
 
@@ -101,10 +101,6 @@ if (eia_860_year < 2021){
   eia_data_file <- str_glue("https://www.eia.gov/electricity/data/eia860/xls/eia860{eia_860_year}.zip")}
 egrid_data_file <- "https://www.epa.gov/sites/production/files/2020-09/epa-eia_plant_id_crosswalk.xlsx"
 ```
-```{r}
-api_key
-```
-
 
 ## Include Additional Datasets
 ```{r}
@@ -113,7 +109,7 @@ api_key
 include_FRS <- FALSE
 
 # include NEEDS IDs. By default, this will download the latest NEEDS data if the year used for analysis is not 2018.
-include_NEEDS <- TRUE
+include_NEEDS <- FALSE
 
 
 ```
@@ -126,12 +122,14 @@ if (api_key == "YOUR_API_KEY") {
 }
 
 response <-
-  GET(str_glue(
+  req_perform(request(str_glue(
     "https://api.epa.gov/FACT/1.0/facilities?api_key={api_key}"
-  ))
+  )))
 
 # If something is wrong with the request, fail gracefully
-stop_for_status(response, content(response)$error$message)
+# stop_for_status(response, content(response)$error$message)
+
+# LEFT OFF HERE. Fixes problem 1 but breaks below as formatting changes.
 
 camd_plants_json <- content(response, as = "text") %>%
   enter_object("data") # Top level json object that is an array of all the plants/oris
