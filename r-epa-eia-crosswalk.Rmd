@@ -8,8 +8,8 @@ output:
     highlight: espresso
 ---
 ```{r include = FALSE}
-# Prevent warnings from showing up in markdown output
-knitr::opts_chunk$set(message = FALSE, warning = FALSE, error = FALSE)
+# Show warnings in markdown output, as they may signal changes in data quality or point to unexpected behaviors
+knitr::opts_chunk$set(message = FALSE, warning = TRUE, error = TRUE)
 ```
 
 # Background
@@ -121,17 +121,14 @@ if (api_key == "YOUR_API_KEY") {
   stop("You must provide a FACT API key")
 }
 
-response <-
-  req_perform(request(str_glue(
+response <- req_perform(request(str_glue(
     "https://api.epa.gov/FACT/1.0/facilities?api_key={api_key}"
   )))
 
 # If something is wrong with the request, fail gracefully
-# stop_for_status(response, content(response)$error$message)
+resp_check_status(response)
 
-# LEFT OFF HERE. Fixes problem 1 but breaks below as formatting changes.
-
-camd_plants_json <- content(response, as = "text") %>%
+camd_plants_json <- as.tbl_json(resp_body_string(response)) %>%
   enter_object("data") # Top level json object that is an array of all the plants/oris
 
 camd_plants <- camd_plants_json %>%
@@ -997,12 +994,6 @@ if(!include_FRS) {
     relocate(FRS_ID, .before = MATCH_TYPE_GEN)
 }
 
-```
-
-```{r, echo = TRUE}
-wd <- getwd()
-
-active_sheet
 ```
 
 
