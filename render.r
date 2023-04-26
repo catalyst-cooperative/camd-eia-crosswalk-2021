@@ -1,6 +1,8 @@
 library(rmarkdown)
+library(stringr)
+wd = getwd()
 rmarkdown::render(
-  input = "~",
-  output_file = "Z:/Some/Folder/scheduled_report.html",
-  output_dir = "Z:/Some/Folder"
+  input = str_glue("{wd}/r-epa-eia-crosswalk.Rmd"),
+  output_file = str_glue("{wd}/r-epa-eia-crosswalk.html"),
+  output_dir = wd
 )
