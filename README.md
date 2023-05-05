@@ -1,3 +1,16 @@
+# Catalyst Cooperative's EPA-EIA 2021 Crosswalk
+
+This repository updates the original EPA-EIA crosswalk to be able to use the most recent year of data (2021).
+While the crosswalk is already configured to accept multiple years of data, a few configurations were updated to make using the recent year of data possible. Specifically, the following changes are made to the repository:
+
+* If the `epa_860_year` selected is 2021, the data file URL used follows a different format
+* If the `epa_860_year` selected is not 2018, the script attempts to download the corresponding year of NEEDS data. If this data is not available, it defaults to the 2018 data available in the repository.
+* The repository is configured to get the EIA API key from an environment variable, rather than through manual input.
+* Given data issues with the CAMD Facilities data that made the existing crosswalk unusable at the time of update (Apr 2023), the method to read in and process this data was updated to use a different R library (httr2).
+* An `render.R` file is added to enable automatic running of the .Rmd document.
+
+The text below is the original description of the EPA-EIA croswalk, from which this repository is forked.
+
 # EPA—EIA Power Sector Data Crosswalk
 
 A data crosswalk to integrate U.S. power sector emission and operation data from the Environmental Protection Agency (EPA) and Energy Information Administration (EIA). Provided in this repo are both the outputs of the crosswalk (csv and xlsx format) and the R script (in an R markdown document) that generates these outputs.
@@ -68,7 +81,7 @@ CAMD data are retrieved using the [Field Audit Checklist Tool (FACT) API](https:
 
 The R script uses the following tiered approach to match EPA/CAMD data to EIA data at each facility:
 
-1.  The CAMD Plant ID and generator ID are matched to the EIA Plant ID and generator ID (from EIA-860 3_1\_Generator_Y{data year}) according to these steps:
+1. The CAMD Plant ID and generator ID are matched to the EIA Plant ID and generator ID (from EIA-860 3_1\_Generator_Y{data year}) according to these steps:
 
     i\. Matches and exclusions from the `manual_matches.xlsx` file are pulled in before any matching occurs to prevent duplicates
 
@@ -76,7 +89,7 @@ The R script uses the following tiered approach to match EPA/CAMD data to EIA da
 
     iii."Fuzzy" matching between both data sets
 
-2.  The CAMD Plant ID, generator ID, and unit ID are matched to the EIA Plant ID, generator ID, and boiler ID (from EIA-860 6_1\_EnviroAssoc_Y{data year}) according to these steps:
+2. The CAMD Plant ID, generator ID, and unit ID are matched to the EIA Plant ID, generator ID, and boiler ID (from EIA-860 6_1\_EnviroAssoc_Y{data year}) according to these steps:
 
     i\. Matches and exclusions from the `manual_matches.xlsx` file are pulled in before any matching occurs to prevent duplicates
 
@@ -84,7 +97,7 @@ The R script uses the following tiered approach to match EPA/CAMD data to EIA da
 
     iii\. "Fuzzy" matching between both data sets
 
-3.  The results from Steps 1 and 2 are joined, resulting in a set of comprehensive matches that have all CAMD identifiers and all EIA identifiers where they exist. CAMD units that did not match in any step are added to the crosswalk with an indicator that they were unmatched.
+3. The results from Steps 1 and 2 are joined, resulting in a set of comprehensive matches that have all CAMD identifiers and all EIA identifiers where they exist. CAMD units that did not match in any step are added to the crosswalk with an indicator that they were unmatched.
 
 Manual matches between CAMD data and EIA data that would not be captured via exact matching or fuzzy matches, are added to the crosswalk from the `manual_matches.xlsx` file. Any CAMD units in the manual match file that should be excluded from the matching process, mostly due to the lack of a connection to the electricity grid (e.g., industrial boilers), are added to the crosswalk with an indicator that they were manually excluded.
 
@@ -147,19 +160,19 @@ The resulting crosswalk includes an xlsx spreadsheet (`epa_eia_crosswalk.xlsx`) 
 | MATCH_TYPE_BOILER           | The type of match made during Step 2, matching CAMD units and generators to EIA boilers and generators on CAMD and EIA plant, unit/boiler, and generator IDs. Any applied modifier sub-steps are also indicated in this field.                                                                                    |
 
 > Update (v0.3): Columns for additional datasets
-> - FRS ID: The FRS ID associated with each observation.
-> - NEEDS_UNIQUE_ID: The NEEDS ID associated with each observation.
-
+>
+> * FRS ID: The FRS ID associated with each observation.
+> * NEEDS_UNIQUE_ID: The NEEDS ID associated with each observation.
 
 ## Important Notes
 
 ------------------------------------------------------------------------
 
--   There may be multiple generators associated with one boiler, or multiple boilers associated with one generator. CAMD recommends that data users trying to match information (e.g., emissions and generation) from both data sets first decide whether to collapse on boilers or generators within the crosswalk to avoid double counting after matching the two data sets.
+* There may be multiple generators associated with one boiler, or multiple boilers associated with one generator. CAMD recommends that data users trying to match information (e.g., emissions and generation) from both data sets first decide whether to collapse on boilers or generators within the crosswalk to avoid double counting after matching the two data sets.
 
--   Some units in CAMD's database do not have a generator ID. This may be because some data was not reported to EPA, or the unit does not send electricity to the grid (e.g., it is an industrial unit that is affected by one of EPA's regulatory programs). Many of the units that do not send electricity to the grid have a plant ID that starts with 88 followed by four digits; however, not all non-grid-connected facilities follow this practice. Those with a plant ID that starts with 88 followed by four digits are flagged in the manual match file and left unmatched. CAMD is actively investigating other missing generator IDs and is working to fill in gaps where they exist. When new matches are discovered, CAMD will add them to the manual match file. CAMD also encourages others to contribute manual matches (see Contributing to the Crosswalk: Additions to Manual Matches below). If you notice additional units when re-running the code, it could be due to this ongoing process.
+* Some units in CAMD's database do not have a generator ID. This may be because some data was not reported to EPA, or the unit does not send electricity to the grid (e.g., it is an industrial unit that is affected by one of EPA's regulatory programs). Many of the units that do not send electricity to the grid have a plant ID that starts with 88 followed by four digits; however, not all non-grid-connected facilities follow this practice. Those with a plant ID that starts with 88 followed by four digits are flagged in the manual match file and left unmatched. CAMD is actively investigating other missing generator IDs and is working to fill in gaps where they exist. When new matches are discovered, CAMD will add them to the manual match file. CAMD also encourages others to contribute manual matches (see Contributing to the Crosswalk: Additions to Manual Matches below). If you notice additional units when re-running the code, it could be due to this ongoing process.
 
--   Boiler information is reported to EIA for plants where the sum of the nameplate capacity of the steam-electric generators, including duct-fired steam components of combined cycle units, sum to 10 MW or more.
+* Boiler information is reported to EIA for plants where the sum of the nameplate capacity of the steam-electric generators, including duct-fired steam components of combined cycle units, sum to 10 MW or more.
 
 ## Contributing to the Crosswalk
 
@@ -171,22 +184,22 @@ Thanks for taking the time to contribute! You can help improve the crosswalk by 
 
 The data for this crosswalk can be found from these two sources:
 
--   EIA data set: [EIA-860](https://www.eia.gov/electricity/data/eia860/)
+* EIA data set: [EIA-860](https://www.eia.gov/electricity/data/eia860/)
 
-    -   Zip file with several xlsx files. Namely, we use "2\_\_\_Plant_Y2018.xlsx" and "3_1\_Generator_Y2018.xlsx."
+  * Zip file with several xlsx files. Namely, we use "2\_\_\_Plant_Y2018.xlsx" and "3_1\_Generator_Y2018.xlsx."
 
--   CAMD data set: [Field Audit Checklist Tool (FACT) API](https://www.epa.gov/airmarkets/field-audit-checklist-tool-fact-api#/)
+* CAMD data set: [Field Audit Checklist Tool (FACT) API](https://www.epa.gov/airmarkets/field-audit-checklist-tool-fact-api#/)
 
-    -   REST API with various endpoints. We use the /facilities endpoint.
-    -   Must sign up for an API key [here](https://www.epa.gov/airmarkets/field-audit-checklist-tool-fact-api#signup).
+  * REST API with various endpoints. We use the /facilities endpoint.
+  * Must sign up for an API key [here](https://www.epa.gov/airmarkets/field-audit-checklist-tool-fact-api#signup).
 
--   Manual matches file included in repository: (`manual_matches.xlsx`)
+* Manual matches file included in repository: (`manual_matches.xlsx`)
 
-    -   Excel file with three sheets including manual matches, CAMD unit-generators that should not be matched, and a copy of the Plant ID changes from Section 4.1.1 of the [eGRID Technical Support Document](https://www.epa.gov/egrid/egrid-technical-support-document)
+  * Excel file with three sheets including manual matches, CAMD unit-generators that should not be matched, and a copy of the Plant ID changes from Section 4.1.1 of the [eGRID Technical Support Document](https://www.epa.gov/egrid/egrid-technical-support-document)
 
-    -   Direct link to xlsx: [epa-eia_plant_id_crosswalk.xlsx](https://www.epa.gov/sites/production/files/2020-09/epa-eia_plant_id_crosswalk.xlsx)
+  * Direct link to xlsx: [epa-eia_plant_id_crosswalk.xlsx](https://www.epa.gov/sites/production/files/2020-09/epa-eia_plant_id_crosswalk.xlsx)
 
-    -   Note: any updates to the eGRID Plant ID crosswalk will be reflected in the "plant_id_manual_matches" sheet within the manual matches file.
+  * Note: any updates to the eGRID Plant ID crosswalk will be reflected in the "plant_id_manual_matches" sheet within the manual matches file.
 
 The crosswalk script is built using R with [tidyverse](https://www.tidyverse.org/) packages and [styling](https://style.tidyverse.org/).
 
@@ -196,10 +209,10 @@ If you investigate a source that is currently unmatched and find information tha
 
 When adding a new match, make sure to:
 
--   Input the ID exactly as it is found from the source data. Excel will try to eliminate leading zeros and format some text as dates. (e.g. if the CAMD UNIT_ID is 001, you must input it as 001 and if EIA_BOILER_ID is 1-6, make sure it doesn't get saved as January 6th).
--   Include a reason for the match describing why the identifiers should be matched the way you indicated.
--   Include any sources for information supporting this reason.
--   Test the R script to see if the desired output occurs with the addition of the manual matches.
+* Input the ID exactly as it is found from the source data. Excel will try to eliminate leading zeros and format some text as dates. (e.g. if the CAMD UNIT_ID is 001, you must input it as 001 and if EIA_BOILER_ID is 1-6, make sure it doesn't get saved as January 6th).
+* Include a reason for the match describing why the identifiers should be matched the way you indicated.
+* Include any sources for information supporting this reason.
+* Test the R script to see if the desired output occurs with the addition of the manual matches.
 
 ### Issues
 
@@ -209,17 +222,17 @@ When writing an issue please write detailed information to help us understand th
 
 For example:
 
--   The PLANT_ID, BOILER_ID, and/or GENERATOR_ID associated with the issue.
--   The step in the methodology where the issue occurs (e.g., Step 2c).
--   The expected and actual results.
--   Any additional data that may be helpful to improve the R script or data outputs.
+* The PLANT_ID, BOILER_ID, and/or GENERATOR_ID associated with the issue.
+* The step in the methodology where the issue occurs (e.g., Step 2c).
+* The expected and actual results.
+* Any additional data that may be helpful to improve the R script or data outputs.
 
 ### Pull Requests
 
 Pull requests are always welcome!
 
--   When you edit the R script, please style according to the [tidyverse styling guide](https://style.tidyverse.org/) (the [styler](https://styler.r-lib.org/) R package is useful to select and style statements).
--   Ensure the pull request description clearly describes the problem and solution
+* When you edit the R script, please style according to the [tidyverse styling guide](https://style.tidyverse.org/) (the [styler](https://styler.r-lib.org/) R package is useful to select and style statements).
+* Ensure the pull request description clearly describes the problem and solution
 
 ### Examples
 
