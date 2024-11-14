@@ -6,7 +6,11 @@ output:
     code_folding: hide
     theme: readable
     highlight: espresso
+editor_options: 
+  markdown: 
+    wrap: sentence
 ---
+
 ```{r include = FALSE}
 # Show warnings in markdown output, as they may signal changes in data quality or point to unexpected behaviors
 knitr::opts_chunk$set(message = FALSE, warning = TRUE, error = TRUE)
@@ -14,54 +18,70 @@ knitr::opts_chunk$set(message = FALSE, warning = TRUE, error = TRUE)
 
 # Background
 
-This R script retrieves the Environmental Protection Agency's (EPA) Clean Air Markets (CAMD) [Power Sector Emissions Data](https://www.epa.gov/airmarkets/power-sector-emissions-data) and EIA's [860 power plant data](https://www.eia.gov/electricity/data/eia860/) about power plant units and maps the EIA data to EPA data. The EPA data are retrieved with the CAMD [FACT API](https://www.epa.gov/airmarkets/field-audit-checklist-tool-fact-api) and the EIA data are retrieved from the Excel spreadsheets within the ZIP file. You have the option of specifying a different year for EIA data (e.g., the most current year).
+This R script retrieves the Environmental Protection Agency's (EPA) Clean Air Markets (CAMD) [Power Sector Emissions Data](https://www.epa.gov/airmarkets/power-sector-emissions-data) and EIA's [860 power plant data](https://www.eia.gov/electricity/data/eia860/) about power plant units and maps the EIA data to EPA data.
+The EPA data are retrieved with the CAMD [FACT API](https://www.epa.gov/airmarkets/field-audit-checklist-tool-fact-api) and the EIA data are retrieved from the Excel spreadsheets within the ZIP file.
+You have the option of specifying a different year for EIA data (e.g., the most current year).
 
-The larger data sets from EPA and EIA include information about power plant attributes, emissions, operations, fuel consumption, and electricity generation. This crosswalk relates key identifiers assigned to power plant units to make it easier to connect and use larger EPA and EIA data sets. The crosswalk can also be extended to other government data sets.
+The larger data sets from EPA and EIA include information about power plant attributes, emissions, operations, fuel consumption, and electricity generation.
+This crosswalk relates key identifiers assigned to power plant units to make it easier to connect and use larger EPA and EIA data sets.
+The crosswalk can also be extended to other government data sets.
 
-Each power plant has a unique facility ID known as an ORIS code (EPA) or plant code (EIA). Steam power plants are made up of boilers (where fuel is combusted to generate steam that moves a turbine) and generators (where kinetic energy from the turbine is converted to electrical energy) to generate electricity. Natural gas-fired power plants are made up of or combustion turbines (where fuel is combusted to turn a turbine) and generators to generate electricity. Combined-cycle power plants also have heat recovery steam generators (where waste heat generates steam that moves a turbine). Boilers, combustion turbines, and generators are interchangeably referred to as units in the two data sets. Because CAMD data is collected for environmental compliance, CAMD considers units to be the combustion units (boilers or combustion turbines). EIA data is collected to track electricity generation, so EIA considers units to be generators. The combustion unit and generator IDs may not be the same, even if they are a part of the same system. In addition, reporting discrepancies may mean that the IDs may not match across the two agencies' databases. This crosswalk attempts to connect these components from both data sets.
+Each power plant has a unique facility ID known as an ORIS code (EPA) or plant code (EIA).
+Steam power plants are made up of boilers (where fuel is combusted to generate steam that moves a turbine) and generators (where kinetic energy from the turbine is converted to electrical energy) to generate electricity.
+Natural gas-fired power plants are made up of or combustion turbines (where fuel is combusted to turn a turbine) and generators to generate electricity.
+Combined-cycle power plants also have heat recovery steam generators (where waste heat generates steam that moves a turbine).
+Boilers, combustion turbines, and generators are interchangeably referred to as units in the two data sets.
+Because CAMD data is collected for environmental compliance, CAMD considers units to be the combustion units (boilers or combustion turbines).
+EIA data is collected to track electricity generation, so EIA considers units to be generators.
+The combustion unit and generator IDs may not be the same, even if they are a part of the same system.
+In addition, reporting discrepancies may mean that the IDs may not match across the two agencies' databases.
+This crosswalk attempts to connect these components from both data sets.
 
 # Methodology
 
 ## Modify mismatched plant codes
 
-There are some power plants that have a single PLANT_ID/ORIS code in CAMD's data set, but a different or multiple plant codes in EIA's data set. The known manual PLANT_ID matches are pulled in from the `manual_matches.xlsx` file. The EIA_PLANT_ID identifier for these known mismatches are modified and the result is placed in the MOD_EIA_PLANT_ID field (e.g. CAMD PLANT_ID of 330 should match with EIA_PLANT_ID 57901, so the MOD_EIA_PLANT_ID is changed to 57901 to include the match in the crosswalk). Units are matched using the identifiers preceded by `MOD_`
+There are some power plants that have a single PLANT_ID/ORIS code in CAMD's data set, but a different or multiple plant codes in EIA's data set.
+The known manual PLANT_ID matches are pulled in from the `manual_matches.xlsx` file.
+The EIA_PLANT_ID identifier for these known mismatches are modified and the result is placed in the MOD_EIA_PLANT_ID field (e.g. CAMD PLANT_ID of 330 should match with EIA_PLANT_ID 57901, so the MOD_EIA_PLANT_ID is changed to 57901 to include the match in the crosswalk).
+Units are matched using the identifiers preceded by `MOD_`
 
->  Note:
->  <br>Steps 1 and 2 are performed independently.
->  <br>Each sub-step(a-d) within Step 1 and 2 is performed sequentially matching on only the unmatched from the previous sub-step(a-d)
->  <br>To start, each identifier is copied to the field of the same name preceded by `MOD_` and each modification to the original identifier is placed in the corresponding `MOD_` field. This means that if a match occurs without modifying the identifier, the `MOD_` field will be an exact copy of the original identifier.
->  <br>Joins are performed on the identifiers preceded by `MOD_`
+> Note: <br>Steps 1 and 2 are performed independently.
+> <br>Each sub-step(a-d) within Step 1 and 2 is performed sequentially matching on only the unmatched from the previous sub-step(a-d) <br>To start, each identifier is copied to the field of the same name preceded by `MOD_` and each modification to the original identifier is placed in the corresponding `MOD_` field.
+> This means that if a match occurs without modifying the identifier, the `MOD_` field will be an exact copy of the original identifier.
+> <br>Joins are performed on the identifiers preceded by `MOD_`
 
-## Step 1: Match CAMD to EIA 3_1_Generator data set (retired and operational generators)
+## Step 1: Match CAMD to EIA 3_1\_Generator data set (retired and operational generators)
 
 Units are matched on ORIS/modified plant code and generator ID.
 
-- Manual matches and exclusions are pulled in from `manual_matches.xlsx`
-- Step 1a: Units are matched on original unit identifiers
-- Step 1b: Unit identifiers are modified to change to upper case and remove whitespace and special characters.
-- Step 1c: Unit identifiers are modified to change numbers as strings to numeric values.
-- Step 1d: Unit identifiers are modified to remove leading characters if the identifier ends in a number or a number-letter combination (e.g., CT1 becomes 1, CT1A becomes 1A).
+-   Manual matches and exclusions are pulled in from `manual_matches.xlsx`
+-   Step 1a: Units are matched on original unit identifiers
+-   Step 1b: Unit identifiers are modified to change to upper case and remove whitespace and special characters.
+-   Step 1c: Unit identifiers are modified to change numbers as strings to numeric values.
+-   Step 1d: Unit identifiers are modified to remove leading characters if the identifier ends in a number or a number-letter combination (e.g., CT1 becomes 1, CT1A becomes 1A).
 
-## Step 2: Match CAMD to EIA 6_1_EnviroAssoc data set (boilers and generators)
+## Step 2: Match CAMD to EIA 6_1\_EnviroAssoc data set (boilers and generators)
 
 Units are matched on ORIS/modified plant code, unit/boiler ID, and generator ID.
 
-- Manual matches and exclusions are pulled in from `manual_matches.xlsx`
-- Step 2a: Units are matched on original unit identifiers
-- Step 2b: Unit identifiers are modified to change to upper case and remove whitespace and special characters.
-- Step 2c: Unit identifiers are modified to change numbers as strings to numeric values.
-- Step 2d: Unit identifiers are modified to remove leading characters if the identifier ends in a number or a number-letter combination (e.g., CT1 becomes 1, CT1A becomes 1A).
+-   Manual matches and exclusions are pulled in from `manual_matches.xlsx`
+-   Step 2a: Units are matched on original unit identifiers
+-   Step 2b: Unit identifiers are modified to change to upper case and remove whitespace and special characters.
+-   Step 2c: Unit identifiers are modified to change numbers as strings to numeric values.
+-   Step 2d: Unit identifiers are modified to remove leading characters if the identifier ends in a number or a number-letter combination (e.g., CT1 becomes 1, CT1A becomes 1A).
 
 ## Step 3: Join data sets from Step 1 and Step 2 to output a set of comprehensive matches that have all CAMD identifiers and all EIA identifiers where they exist. CAMD units that did not match in any step are added to the crosswalk with an indicator that they were unmatched.
 
 The two sets are joined on CAMD_PLANT_ID, CAMD_UNIT_ID, CAMD_GENERATOR_ID, EIA_PLANT_ID, and EIA_GENERATOR_ID
 
-> Note:
-> <br>To use this code, you will need an API key. You can request one from the [FACT API overview](https://www.epa.gov/airmarkets/field-audit-checklist-tool-fact-api#signup).
+> Note: <br>To use this code, you will need an API key.
+> You can request one from the [FACT API overview](https://www.epa.gov/airmarkets/field-audit-checklist-tool-fact-api#signup).
 
 # Processing
 
 ## Load required packages
+
 ```{r, echo = TRUE}
 rm(list = ls())
 
@@ -89,13 +109,14 @@ library(rvest) # Used to query all links on NEEDS page.
 ```
 
 ## Assign key values for data retrieval
+
 ```{r}
 # API key for FACT API
 api_key <- Sys.getenv("API_KEY_EIA") # This expects users to have an environment variable API_KEY_EIA in a .Renviron file locally.
-eia_860_year <- 2021 # The  EIA data year (available at https://www.eia.gov/electricity/data/eia860/)
+eia_860_year <- 2022 # The  EIA data year (available at https://www.eia.gov/electricity/data/eia860/)
 earliest_retirement_year <- 2010 # All units retired before this year are filtered out of the data
 
-if (eia_860_year < 2021){
+if (eia_860_year < 2022){
   eia_data_file <- str_glue("https://www.eia.gov/electricity/data/eia860/archive/xls/eia860{eia_860_year}.zip")
 }else{
   eia_data_file <- str_glue("https://www.eia.gov/electricity/data/eia860/xls/eia860{eia_860_year}.zip")}
@@ -103,6 +124,7 @@ egrid_data_file <- "https://www.epa.gov/sites/production/files/2020-09/epa-eia_p
 ```
 
 ## Include Additional Datasets
+
 ```{r}
 # include FRS IDs
 # Note: adding FRS IDs may add several minutes of processing time to the code due to data retrieval.
@@ -115,7 +137,9 @@ include_NEEDS <- FALSE
 ```
 
 ## Import CAMD data
+
 This section imports the unit and generator data from the CAMD FACT API. **A FACT API key is required** and can be obtained easily by signing up at the [FACT API website](https://www.epa.gov/airmarkets/field-audit-checklist-tool-fact-api#signup).
+
 ```{r, echo = TRUE}
 if (api_key == "YOUR_API_KEY") {
   stop("You must provide a FACT API key")
@@ -215,7 +239,12 @@ camd_unit
 ```
 
 ## Import EIA data
-This section downloads and imports data from EIA-860 for the year specified above. To manually download the data from EIA, visit the [EIA-860 data](https://www.eia.gov/electricity/data/eia860/). Select and download the latest year's ZIP file on the right-hand-side of the page. The files used in this analysis are "3_1_Generator_Y{year}.xlsx" and "6_1_EnviroAssoc_Y{year}.xlsx", with "2___Plant_Y{year}.xlsx" to get lat/long.
+
+This section downloads and imports data from EIA-860 for the year specified above.
+To manually download the data from EIA, visit the [EIA-860 data](https://www.eia.gov/electricity/data/eia860/).
+Select and download the latest year's ZIP file on the right-hand-side of the page.
+The files used in this analysis are "3_1\_Generator_Y{year}.xlsx" and "6_1\_EnviroAssoc_Y{year}.xlsx", with "2\_\_\_Plant_Y{year}.xlsx" to get lat/long.
+
 ```{r, echo = TRUE}
 # Import plant, generator, and boiler (EnviroAssoc) data from EIA-860 using data year specified in eia_860_year
 
@@ -313,6 +342,7 @@ eia_boiler
 ```
 
 ## Get manual matches and excluded CAMD units from manual match file
+
 ```{r}
 manual_match_cols <- c("numeric", "text", "text", "numeric", "text", "text")
 
@@ -337,8 +367,13 @@ rm(manual_match_cols)
 
 ## Modify EIA plant code based on eGRID known mismatch list
 
-In the production of eGRID, CAMD checks whether there are any discrepancies between the ORIS code in CAMD's database and the plant code in EIA's database. A small number of plants do have these mismatches, and they are corrected in this section. This section changes the plant code in EIA's data, placing the changes in the `MOD_EIA_PLANT_ID` column, to match CAMD's ORIS code data, according to Table C-5 of Appendix C in the [eGRID2018 TSD](https://www.epa.gov/egrid/egrid-technical-support-document). A direct download for this table in xlsx format can be found here: [epa-eia_plant_id_crosswalk.xlsx](https://www.epa.gov/sites/production/files/2020-09/epa-eia_plant_id_crosswalk.xlsx).
-The manual match Excel file has a copy of the eGRID epa-eia_plant_id_crosswalk that updates. Any updates to the eGRID file will be reflected in the manual match file.
+In the production of eGRID, CAMD checks whether there are any discrepancies between the ORIS code in CAMD's database and the plant code in EIA's database.
+A small number of plants do have these mismatches, and they are corrected in this section.
+This section changes the plant code in EIA's data, placing the changes in the `MOD_EIA_PLANT_ID` column, to match CAMD's ORIS code data, according to Table C-5 of Appendix C in the [eGRID2018 TSD](https://www.epa.gov/egrid/egrid-technical-support-document).
+A direct download for this table in xlsx format can be found here: [epa-eia_plant_id_crosswalk.xlsx](https://www.epa.gov/sites/production/files/2020-09/epa-eia_plant_id_crosswalk.xlsx).
+The manual match Excel file has a copy of the eGRID epa-eia_plant_id_crosswalk that updates.
+Any updates to the eGRID file will be reflected in the manual match file.
+
 ```{r,echo = TRUE}
 # Get plant identifier corrections from manual match excel sheet
 egrid_crosswalk_cols <- c("numeric", "text", "numeric", "text")
@@ -376,9 +411,8 @@ rm(plant_id_replacements)
 rm(egrid_crosswalk_cols)
 ```
 
-
-
 ## Constants used in the following steps
+
 ```{r}
 
 plant_boiler_gen_match <-
@@ -404,6 +438,7 @@ plant_generator_match <-
 ## Match functions
 
 The match functions for matching units based on plant ID, unit ID/boiler ID, and/or generator ID
+
 ```{r}
 #' Get matches between CAMD and EIA data sets using dplyr::inner_join()
 #'
@@ -544,9 +579,11 @@ get_camd_unmatched <- partial(get_unmatched, by = c("CAMD_PLANT_ID", "CAMD_UNIT_
 
 get_eia_unmatched <- partial(get_unmatched, by = c("EIA_PLANT_ID", "EIA_BOILER_ID", "EIA_GENERATOR_ID"))
 ```
+
 ## Modifier functions
 
 The modifier functions for modifying unit identifiers, such as unit ID/boiler ID and/or generator ID
+
 ```{r}
 
 #' Function to convert all strings in modified generator and combustion unit identifiers to uppercase and remove whitespace and special characters
@@ -604,46 +641,51 @@ mod_identifiers_leading_letters <- function(x) {
 
 ## Match Sub-steps
 
-These steps are performed in sequential order during Steps 1 and 2, the matching process between CAMD and each of the EIA 3_1_Generator (generator) and 6_1_EnviroAssoc (boiler) files.
+These steps are performed in sequential order during Steps 1 and 2, the matching process between CAMD and each of the EIA 3_1\_Generator (generator) and 6_1\_EnviroAssoc (boiler) files.
 
 ### Sub-step a - Exact match on all unit identifiers
+
 In this step, we look for direct matches on the EPA and EIA unit identifiers.
 
 ### Sub-step b - Modify identifiers to change to uppercase and remove whitespace and special characters
-In this step, we modify the EPA and EIA unit identifiers to adjust all alpha characters to uppercase, remove whitespace, and remove special characters
-Examples of these modifications include:
 
-* un14 -> UN14
-* CT 2A -> CT2A
-* CT-1 -> CT1
+In this step, we modify the EPA and EIA unit identifiers to adjust all alpha characters to uppercase, remove whitespace, and remove special characters Examples of these modifications include:
+
+-   un14 -\> UN14
+-   CT 2A -\> CT2A
+-   CT-1 -\> CT1
 
 ### Sub-step c - Modify identifiers to convert numbers in strings to numeric values
-In this step, we modify the EPA and EIA unit identifiers to convert all numbers presented as strings to numeric values. This also eliminates leading zeros.
+
+In this step, we modify the EPA and EIA unit identifiers to convert all numbers presented as strings to numeric values.
+This also eliminates leading zeros.
 Examples of these modifications include:
 
-* 002 -> 2
-* "2" -> 2
+-   002 -\> 2
+-   "2" -\> 2
 
 ### Sub-step d - Modify identifiers to eliminate leading alpha characters
+
 In this step, we modify the EPA and EIA unit identifiers to remove all alpha (letter) characters at the start of the identifier if the identifier ends in a number or number-letter combination.
 Examples of these modifications include:
 
-* CT1A -> 1A
-* SGT1 -> 1
-* No 5 -> 5
+-   CT1A -\> 1A
+-   SGT1 -\> 1
+-   No 5 -\> 5
 
 ## Steps 1, 2 and 3:
 
-Look for matches on the modified EPA and EIA unit identifiers between CAMD and EIA 3_1_Generator (generators) EIA 6_1_EnviroAssoc (boilers) separately. After both matches are complete between CAMD and each of the EIA data sets, we join the matches to have a result with matches between:
+Look for matches on the modified EPA and EIA unit identifiers between CAMD and EIA 3_1\_Generator (generators) EIA 6_1\_EnviroAssoc (boilers) separately.
+After both matches are complete between CAMD and each of the EIA data sets, we join the matches to have a result with matches between:
 
-CAMD_PLANT_ID     = EIA_PLANT_ID
+CAMD_PLANT_ID = EIA_PLANT_ID
 
-CAMD_UNIT_ID      = EIA_BOILER_ID
+CAMD_UNIT_ID = EIA_BOILER_ID
 
 CAMD_GENERATOR_ID = EIA_GENERATOR_ID
 
+## Step 1: Match CAMD to EIA 3_1\_Generator data set (retired and operational generators)
 
-## Step 1: Match CAMD to EIA 3_1_Generator data set (retired and operational generators)
 ```{r}
 generator_step_string <- "3_1_Generator (generators) match on plant and gen IDs  Step 1"
 
@@ -717,7 +759,8 @@ generator_match_summary <- camd_eia_gen_crosswalk %>%
 generator_match_summary
 ```
 
-## Step 2: Match CAMD to EIA 6_1_EnviroAssoc (boilers and generators) data set
+## Step 2: Match CAMD to EIA 6_1\_EnviroAssoc (boilers and generators) data set
+
 ```{r}
 
 boiler_step_string <- "6_1_EnviroAssoc (boilers and generators) match on plant, boiler, and gen IDs Step 2"
@@ -795,6 +838,7 @@ boiler_match_summary
 ```
 
 ## Step 3: Join data sets from Step 2 and Step 3 to have a set of comprehensive matches that have all CAMD identifiers and all EIA identifiers where they exist. CAMD units that did not match in any step are added to the crosswalk with an indicator that they were unmatched.
+
 ```{r}
 camd_eia_crosswalk <- camd_eia_gen_crosswalk %>%
   # We needed the manual matches/unmatched in the gen/boiler crosswalks to keep them out of the process,
@@ -883,9 +927,8 @@ camd_eia_crosswalk <- camd_eia_gen_crosswalk %>%
 camd_eia_crosswalk
 ```
 
-
-
 ## Get unmatched after all Steps
+
 ```{r}
 camd_unmatched <- get_camd_unmatched(camd_unit, camd_eia_crosswalk) %>%
   arrange(CAMD_PLANT_ID, CAMD_UNIT_ID, CAMD_GENERATOR_ID)
@@ -914,7 +957,9 @@ eia_boiler_unmatched
 
 ### Match Summary
 
-CAMD_DISTINCT/DUPLICATES are found according to unique combinations of CAMD plant, unit, and generator identifiers. Duplicates can either be introduced from the automated crosswalk operations or from manual matches. Duplicates can also occur in the rare cases where CAMD has fewer identifiers for the same unit/generator than EIA (e.g. CAMD_PLANT_ID = 52151, CAMD_UNIT_ID = 001, EIA_PLANT_ID = 52151, EIA_BOILER_ID = PB1,RF1,PB2,RF2).
+CAMD_DISTINCT/DUPLICATES are found according to unique combinations of CAMD plant, unit, and generator identifiers.
+Duplicates can either be introduced from the automated crosswalk operations or from manual matches.
+Duplicates can also occur in the rare cases where CAMD has fewer identifiers for the same unit/generator than EIA (e.g. CAMD_PLANT_ID = 52151, CAMD_UNIT_ID = 001, EIA_PLANT_ID = 52151, EIA_BOILER_ID = PB1,RF1,PB2,RF2).
 
 ```{r, echo = TRUE}
 # Create table of counts of matches for each step
@@ -939,6 +984,7 @@ crosswalk_summary_table
 ```
 
 ## Add Optional Datasets
+
 ```{r, echo = TRUE}
 # add FRS IDs to crosswalk output
 # set to run/not run by changing TRUE/FALSE at the beginning of the code
@@ -995,7 +1041,6 @@ if(!include_FRS) {
 }
 
 ```
-
 
 ```{r, echo = TRUE}
 # add NEEDS IDs to crosswalk output
@@ -1074,6 +1119,7 @@ if(!include_NEEDS) {
 ```
 
 ## Crosswalk output
+
 ```{r,echo = TRUE}
 # Create/modify xlsx workbook and worksheet to add text format to cells, preventing Excel from
 # changing some GENIDs and UNIT_IDs to dates and other automatic formatting issues
