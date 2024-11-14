@@ -51,7 +51,7 @@ Units are matched using the identifiers preceded by `MOD_`
 > This means that if a match occurs without modifying the identifier, the `MOD_` field will be an exact copy of the original identifier.
 > <br>Joins are performed on the identifiers preceded by `MOD_`
 
-## Step 1: Match CAMD to EIA 3_1\_Generator data set (retired and operational generators)
+## Step 1: Match CAMD to EIA 3_1_Generator data set (retired and operational generators)
 
 Units are matched on ORIS/modified plant code and generator ID.
 
@@ -61,7 +61,7 @@ Units are matched on ORIS/modified plant code and generator ID.
 -   Step 1c: Unit identifiers are modified to change numbers as strings to numeric values.
 -   Step 1d: Unit identifiers are modified to remove leading characters if the identifier ends in a number or a number-letter combination (e.g., CT1 becomes 1, CT1A becomes 1A).
 
-## Step 2: Match CAMD to EIA 6_1\_EnviroAssoc data set (boilers and generators)
+## Step 2: Match CAMD to EIA 6_1_EnviroAssoc data set (boilers and generators)
 
 Units are matched on ORIS/modified plant code, unit/boiler ID, and generator ID.
 
@@ -113,10 +113,10 @@ library(rvest) # Used to query all links on NEEDS page.
 ```{r}
 # API key for FACT API
 api_key <- Sys.getenv("API_KEY_EIA") # This expects users to have an environment variable API_KEY_EIA in a .Renviron file locally.
-eia_860_year <- 2022 # The  EIA data year (available at https://www.eia.gov/electricity/data/eia860/)
+eia_860_year <- 2023 # The  EIA data year (available at https://www.eia.gov/electricity/data/eia860/)
 earliest_retirement_year <- 2010 # All units retired before this year are filtered out of the data
 
-if (eia_860_year < 2022){
+if (eia_860_year < 2023){
   eia_data_file <- str_glue("https://www.eia.gov/electricity/data/eia860/archive/xls/eia860{eia_860_year}.zip")
 }else{
   eia_data_file <- str_glue("https://www.eia.gov/electricity/data/eia860/xls/eia860{eia_860_year}.zip")}
@@ -243,7 +243,7 @@ camd_unit
 This section downloads and imports data from EIA-860 for the year specified above.
 To manually download the data from EIA, visit the [EIA-860 data](https://www.eia.gov/electricity/data/eia860/).
 Select and download the latest year's ZIP file on the right-hand-side of the page.
-The files used in this analysis are "3_1\_Generator_Y{year}.xlsx" and "6_1\_EnviroAssoc_Y{year}.xlsx", with "2\_\_\_Plant_Y{year}.xlsx" to get lat/long.
+The files used in this analysis are "3_1_Generator_Y{year}.xlsx" and "6_1_EnviroAssoc_Y{year}.xlsx", with "2\_\_\_Plant_Y{year}.xlsx" to get lat/long.
 
 ```{r, echo = TRUE}
 # Import plant, generator, and boiler (EnviroAssoc) data from EIA-860 using data year specified in eia_860_year
@@ -565,7 +565,7 @@ get_manual_matches <- function(manual_matches, manual_excluded, camd, eia, eia_b
 #' get_unmatched(eia_generator, camd_eia_gen_crosswalk)
 #' get_unmatched(camd_unit, camd_eia_crosswalk, by = c("CAMD_PLANT_ID", "CAMD_UNIT_ID", "CAMD_GENERATOR_ID"))
 get_unmatched <- function(original_data, prev_matches, by = NULL) {
-  if (missing(prev_matches) || is.na(prev_matches) || is.null(prev_matches)) {
+  if (any(missing(prev_matches)) || any(is.na(prev_matches)) || any(is.null(prev_matches))) {
     return(original_data)
   }
   if (!missing(by) || !is.null(by)) {
@@ -641,7 +641,7 @@ mod_identifiers_leading_letters <- function(x) {
 
 ## Match Sub-steps
 
-These steps are performed in sequential order during Steps 1 and 2, the matching process between CAMD and each of the EIA 3_1\_Generator (generator) and 6_1\_EnviroAssoc (boiler) files.
+These steps are performed in sequential order during Steps 1 and 2, the matching process between CAMD and each of the EIA 3_1_Generator (generator) and 6_1_EnviroAssoc (boiler) files.
 
 ### Sub-step a - Exact match on all unit identifiers
 
@@ -675,7 +675,7 @@ Examples of these modifications include:
 
 ## Steps 1, 2 and 3:
 
-Look for matches on the modified EPA and EIA unit identifiers between CAMD and EIA 3_1\_Generator (generators) EIA 6_1\_EnviroAssoc (boilers) separately.
+Look for matches on the modified EPA and EIA unit identifiers between CAMD and EIA 3_1_Generator (generators) EIA 6_1_EnviroAssoc (boilers) separately.
 After both matches are complete between CAMD and each of the EIA data sets, we join the matches to have a result with matches between:
 
 CAMD_PLANT_ID = EIA_PLANT_ID
@@ -684,7 +684,7 @@ CAMD_UNIT_ID = EIA_BOILER_ID
 
 CAMD_GENERATOR_ID = EIA_GENERATOR_ID
 
-## Step 1: Match CAMD to EIA 3_1\_Generator data set (retired and operational generators)
+## Step 1: Match CAMD to EIA 3_1_Generator data set (retired and operational generators)
 
 ```{r}
 generator_step_string <- "3_1_Generator (generators) match on plant and gen IDs  Step 1"
@@ -759,7 +759,7 @@ generator_match_summary <- camd_eia_gen_crosswalk %>%
 generator_match_summary
 ```
 
-## Step 2: Match CAMD to EIA 6_1\_EnviroAssoc (boilers and generators) data set
+## Step 2: Match CAMD to EIA 6_1_EnviroAssoc (boilers and generators) data set
 
 ```{r}
 
