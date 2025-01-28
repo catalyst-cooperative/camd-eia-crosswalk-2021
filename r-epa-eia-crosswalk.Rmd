@@ -530,7 +530,7 @@ get_manual_matches <- function(manual_matches, manual_excluded, camd, eia, eia_b
 #' get_unmatched(eia_generator, camd_eia_gen_crosswalk)
 #' get_unmatched(camd_unit, camd_eia_crosswalk, by = c("CAMD_PLANT_ID", "CAMD_UNIT_ID", "CAMD_GENERATOR_ID"))
 get_unmatched <- function(original_data, prev_matches, by = NULL) {
-  if (missing(prev_matches) || is.na(prev_matches) || is.null(prev_matches)) {
+  if (missing(prev_matches) || any(is.na(prev_matches)) || is.null(prev_matches)) {
     return(original_data)
   }
   if (!missing(by) || !is.null(by)) {
