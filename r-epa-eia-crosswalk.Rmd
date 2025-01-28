@@ -102,6 +102,10 @@ if (check_available_status == 301) {
   # bc eia.gov's 301 points to a nonsense URL we have to do our own redirect
   eia_data_file <- str_glue("https://www.eia.gov/electricity/data/eia860/archive/xls/eia860{eia_860_year}.zip")
 }
+check_available_status <- request(eia_data_file) |> req_method("HEAD") |> req_options(followlocation=FALSE) |> req_perform() |> resp_status()
+if (check_available_status != 200) {
+  stop(paste("Year",eia_860_year,"is not available."))
+}
 
 egrid_data_file <- "https://www.epa.gov/sites/production/files/2020-09/epa-eia_plant_id_crosswalk.xlsx"
 ```
