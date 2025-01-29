@@ -1,13 +1,31 @@
-# Catalyst Cooperative's EPA-EIA 2021 Crosswalk
+# Catalyst Cooperative's EPA-EIA Crosswalk
 
-This repository updates the original EPA-EIA crosswalk to be able to use the most recent year of data (2021).
+This repository updates the original EPA-EIA crosswalk to be able to use any arbitrarily recent year of data.
 While the crosswalk is already configured to accept multiple years of data, a few configurations were updated to make using the recent year of data possible. Specifically, the following changes are made to the repository:
 
-* If the `epa_860_year` selected is 2021, the data file URL used follows a different format
+* The script dynamically selects the appropriate URL format based on whether `epa_860_year` is found at the "current year" location or the "archive year" location.
 * If the `epa_860_year` selected is not 2018, the script attempts to download the corresponding year of NEEDS data. If this data is not available, it defaults to the 2018 data available in the repository.
 * The repository is configured to get the EIA API key from an environment variable, rather than through manual input.
 * Given data issues with the CAMD Facilities data that made the existing crosswalk unusable at the time of update (Apr 2023), the method to read in and process this data was updated to use a different R library (httr2).
 * An `render.R` file is added to enable automatic running of the .Rmd document.
+
+This repository includes a tag for each year of available crosswalk data. To generate and tag a new crosswalk file:
+
+1. Create a new branch from `main`
+2. Update the .Rmd file to set `eia_860_year`
+3. Run the .Rmd. If there are errors, debug them. Try to keep modifications to the code general enough to permit the file to still work for past years.
+4. Once you successfully generate the new crosswalk, commit your changes, push them to GitHub, and open a PR to collect feedback from an extra pair of eyes.
+6. Merge the PR.
+7. Tag the PR commit `v{eia_860_year}` and upload the tag to GitHub
+
+```bash
+$ git checkout main
+$ git pull
+$ git tag v2021
+$ git push --tags
+```
+
+8. Update any downstream resources to include the new crosswalk (e.g. archiver)
 
 The text below is the original description of the EPA-EIA croswalk, from which this repository is forked.
 
