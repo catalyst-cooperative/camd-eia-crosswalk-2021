@@ -120,4 +120,3 @@ AL_coal_noxr <- ggplot(camd_eia_data_coal, aes(x = NET_GEN, y = NOX_RATE, color 
        color = 'Facility Name')
 AL_coal_noxr
 ```
-

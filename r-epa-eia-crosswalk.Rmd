@@ -996,7 +996,7 @@ if(!include_FRS) {
   } else {
   	frs <- read_csv("data/FRS_ids.csv")
   }
-  
+
   camd_eia_crosswalk <- camd_eia_crosswalk %>%
   	left_join(frs, by = "CAMD_PLANT_ID") %>%
     relocate(FRS_ID, .before = MATCH_TYPE_GEN)
@@ -1013,12 +1013,12 @@ if(!include_NEEDS) {
   print("No NEEDS IDs added")
 } else {
   wd <- getwd()
-  
+
   if (eia_860_year != 2018){ # Pull new data unless using 2018 data, which is already downloaded
     # Get reference case links matching year
     needs_url = "https://www.epa.gov/power-sector-modeling/national-electric-energy-data-system-needs"
     page = read_html(needs_url)
-    links <- page %>% html_nodes("a") %>% html_attr("href") %>% str_subset(pattern = ".xlsx") %>% str_subset(regex("[R|r]eference[\\W|\\d]+[C|c]ase", TRUE)) %>% str_subset(pattern = as.character(eia_860_year)) 
+    links <- page %>% html_nodes("a") %>% html_attr("href") %>% str_subset(pattern = ".xlsx") %>% str_subset(regex("[R|r]eference[\\W|\\d]+[C|c]ase", TRUE)) %>% str_subset(pattern = as.character(eia_860_year))
     print(length(links))
     # If any, download
     if (length(links) != 0){
@@ -1026,12 +1026,12 @@ if(!include_NEEDS) {
       download.file(
     str_glue(paste("https://www.epa.gov", links[1], sep = "")),
     str_glue(path_to_file))
-      
+
   }} else { # For 2018 data or if file not found
     path_to_file = str_glue("{wd}/data/needs_v6_november_2018_reference_case_0.xlsx")
-  }    
+  }
   active_sheet = openxlsx::getSheetNames(path_to_file) %>% str_subset(pattern = regex("[A|a]ctive"))
-    
+
   needs <-
     read_excel(
       str_glue(path_to_file),
@@ -1044,16 +1044,16 @@ if(!include_NEEDS) {
       NEEDS_UNIT_ID = `Unit ID`,
       NEEDS_TYPE = `Boiler/Generator/Committed Unit`
     )
-  
+
   needs_boilers <- needs %>%
     filter(NEEDS_TYPE == "B") %>%
     select(-NEEDS_TYPE)
-  
+
   needs_generators <- needs %>%
     filter(NEEDS_TYPE == "G") %>%
     mutate(NEEDS_GENERATOR_ID = NEEDS_UNIT_ID) %>%
     select(-NEEDS_TYPE, -NEEDS_UNIT_ID)
-  
+
   camd_eia_crosswalk <-
     camd_eia_crosswalk %>% left_join(
       needs_generators,
@@ -1061,7 +1061,7 @@ if(!include_NEEDS) {
     ) %>%
     mutate(NEEDS_UNIQUE_G_ID = NEEDS_UNIQUE_ID) %>%
     select(-NEEDS_UNIQUE_ID)
-  
+
   camd_eia_crosswalk <-
     camd_eia_crosswalk %>% left_join(
       needs_boilers,
@@ -1069,12 +1069,12 @@ if(!include_NEEDS) {
     ) %>%
     mutate(NEEDS_UNIQUE_B_ID = NEEDS_UNIQUE_ID) %>%
     select(-NEEDS_UNIQUE_ID)
-  
+
   camd_eia_crosswalk <-
     camd_eia_crosswalk %>%
     mutate(NEEDS_UNIQUE_ID = if_else(is.na(NEEDS_UNIQUE_B_ID), NEEDS_UNIQUE_G_ID, NEEDS_UNIQUE_B_ID)) %>%
     select(-NEEDS_UNIQUE_B_ID, -NEEDS_UNIQUE_G_ID)
-  
+
   camd_eia_crosswalk <- camd_eia_crosswalk %>%
     relocate(NEEDS_UNIQUE_ID, .before = MATCH_TYPE_GEN)
 
