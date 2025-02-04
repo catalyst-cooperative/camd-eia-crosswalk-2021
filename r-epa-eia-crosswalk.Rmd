@@ -92,7 +92,7 @@ library(rvest) # Used to query all links on NEEDS page.
 ```{r}
 # API key for FACT API
 api_key <- Sys.getenv("API_KEY_EIA") # This expects users to have an environment variable API_KEY_EIA in a .Renviron file locally.
-eia_860_year <- 2020 # The  EIA data year (available at https://www.eia.gov/electricity/data/eia860/)
+eia_860_year <- 2021 # The  EIA data year (available at https://www.eia.gov/electricity/data/eia860/)
 earliest_retirement_year <- 2010 # All units retired before this year are filtered out of the data
 
 # Try first at normal location; if we get a 301, try archive instead
